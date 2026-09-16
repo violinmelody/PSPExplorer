@@ -500,38 +500,41 @@ int app_run(void){
 						pane_refresh(&panes[0]);
 						pane_refresh(&panes[1]);
 					}
-				mode=MODE_FILES;
+					mode=MODE_FILES;
+				}
 			}
 		}
+	
+		renderer_begin(settings.hue);
+		if(mode==MODE_FILES){
+			renderer_header("PSPEXPLORER",active?"RIGHT":"LEFT");
+			renderer_explorer(&panes[0],active==0,0,status);
+			renderer_explorer(&panes[1],active==1,1,status);
+		}
+		else if(mode==MODE_MENU){
+			int mc=pane_mark_count(&panes[active]);
+			const char*mm[]={"COPY SELECTED","CUT / MOVE SELECTED","DELETE SELECTED","SELECT ALL","CLEAR SELECTION","BACK"};
+			renderer_menu(mc?"SELECTED ITEMS":"FILE OPERATIONS",mc?mm:menus,mc?6:(int)(sizeof(menus)/sizeof(menus[0])),menu);
+		}
+		else if(mode==MODE_HUE) renderer_hue(settings.hue);
+		else if(mode==MODE_ABOUT) renderer_about();
+		else if(mode==MODE_IMAGE) renderer_image(path,image.pixels,image.w,image.h,image_zoom,image_pan_x,image_pan_y);
+		else if(mode==MODE_AUDIO) renderer_audio(audio.filename,audio.artist,audio.title,audio.waveform,AUDIO_WAVEFORM_POINTS,audio.position_ms,audio.duration_ms,audio.playing,audio.cover.pixels,audio.cover.w,audio.cover.h,audio_button);
+		else if(mode==MODE_EDITOR) renderer_text_editor(editor_path,edit,edit_cursor,key_row,key_col,caps);
+		else if(mode==MODE_PROMPT) renderer_name_prompt(prompt_operation==3?"RENAME":prompt_operation==5?"NEW FILE":"NEW FOLDER",prompt,key_row,key_col,caps,prompt_is_folder);
+		else if(mode==MODE_DELETE_CONFIRM){
+			int mc=pane_mark_count(&panes[active]);
+			const char*detail=mc?"MULTIPLE SELECTED ITEMS":(panes[active].count?panes[active].entries[panes[active].selected].name:"");
+			renderer_confirm("DELETE",mc?"DELETE SELECTED ITEMS?":"DELETE THIS ITEM?",detail,confirm_selected);
+		}
+		renderer_end();
+		old=pad;
 	}
 	
-	renderer_begin(settings.hue);
-	if(mode==MODE_FILES){
-		renderer_header("PSPEXPLORER",active?"RIGHT":"LEFT");
-		renderer_explorer(&panes[0],active==0,0,status);
-		renderer_explorer(&panes[1],active==1,1,status);
-	}
-	else if(mode==MODE_MENU){
-		int mc=pane_mark_count(&panes[active]);
-		const char*mm[]={"COPY SELECTED","CUT / MOVE SELECTED","DELETE SELECTED","SELECT ALL","CLEAR SELECTION","BACK"};
-		renderer_menu(mc?"SELECTED ITEMS":"FILE OPERATIONS",mc?mm:menus,mc?6:(int)(sizeof(menus)/sizeof(menus[0])),menu);
-	}
-	else if(mode==MODE_HUE) renderer_hue(settings.hue);
-	else if(mode==MODE_ABOUT) renderer_about();
-	else if(mode==MODE_IMAGE) renderer_image(path,image.pixels,image.w,image.h,image_zoom,image_pan_x,image_pan_y);
-	else if(mode==MODE_AUDIO) renderer_audio(audio.filename,audio.artist,audio.title,audio.waveform,AUDIO_WAVEFORM_POINTS,audio.position_ms,audio.duration_ms,audio.playing,audio.cover.pixels,audio.cover.w,audio.cover.h,audio_button);
-	else if(mode==MODE_EDITOR) renderer_text_editor(editor_path,edit,edit_cursor,key_row,key_col,caps);
-	else if(mode==MODE_PROMPT) renderer_name_prompt(prompt_operation==3?"RENAME":prompt_operation==5?"NEW FILE":"NEW FOLDER",prompt,key_row,key_col,caps,prompt_is_folder);
-	else if(mode==MODE_DELETE_CONFIRM){
-		int mc=pane_mark_count(&panes[active]);
-		const char*detail=mc?"MULTIPLE SELECTED ITEMS":(panes[active].count?panes[active].entries[panes[active].selected].name:"");
-		renderer_confirm("DELETE",mc?"DELETE SELECTED ITEMS?":"DELETE THIS ITEM?",detail,confirm_selected);
-	}
-	renderer_end();
-	old=pad;
     if(edit){
 		free(edit);
 	}
+	
     image_free(&image);
     audio_player_close(&audio);
     settings_save(&settings);
