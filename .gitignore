@@ -1,0 +1,9 @@
+*.o
+*.elf
+*.prx
+*.d
+PARAM.SFO
+EBOOT.PBP
+settings.dat
+.DS_Store
+*~

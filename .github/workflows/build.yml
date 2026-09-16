@@ -1,0 +1,82 @@
+name: PSP Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build EBOOT.PBP
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Pull official PSPDEV Docker image
+        run: docker pull pspdev/pspdev:latest
+
+      - name: Build EBOOT in PSPDEV container
+        run: |
+          set -euo pipefail
+
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/source" \
+            --workdir /source \
+            pspdev/pspdev:latest \
+            sh -lc '
+              set -e
+
+              export PSPDEV=/usr/local/pspdev
+              export PSPSDK="$PSPDEV/psp/sdk"
+              export PATH="$PSPDEV/bin:$PSPSDK/bin:$PATH"
+
+              echo "=== PSPDEV environment ==="
+              echo "PSPDEV=$PSPDEV"
+              echo "PSPSDK=$PSPSDK"
+              echo "PATH=$PATH"
+
+              echo
+              echo "=== Verify PSP tools ==="
+              command -v psp-config
+              command -v psp-gcc
+              command -v make
+
+              echo
+              echo "=== SDK build.mak ==="
+              test -f "$PSPSDK/lib/build.mak"
+              ls -lh "$PSPSDK/lib/build.mak"
+
+              echo
+              echo "=== Build ==="
+              make clean
+              make -j"$(nproc)"
+            '
+
+      - name: Verify EBOOT
+        run: |
+          set -euo pipefail
+
+          test -s EBOOT.PBP
+          test -s PARAM.SFO
+
+          echo "EBOOT.PBP built successfully"
+          ls -lh EBOOT.PBP PARAM.SFO
+
+      - name: Prepare PSP-ready artifact
+        run: |
+          set -euo pipefail
+
+          mkdir -p dist/PSP/GAME/PSPExplorer
+          cp EBOOT.PBP dist/PSP/GAME/PSPExplorer/EBOOT.PBP
+
+      - name: Upload EBOOT artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PSPExplorer
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30

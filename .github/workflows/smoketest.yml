@@ -1,0 +1,151 @@
+name: Smoketest
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["PSP Build"]
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  smoketest:
+    name: Start EBOOT in PPSSPP
+    runs-on: ubuntu-24.04
+
+    permissions:
+      actions: read
+      contents: read
+
+    steps:
+      - name: Download PSP artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: build.yml
+          workflow_conclusion: success
+          name: PSPExplorer
+          path: dist/
+          branch: main
+          repo: violinmelody/PSPExplorer
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify EBOOT
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EBOOT="dist/PSP/GAME/PSPExplorer/EBOOT.PBP"
+
+          test -s "$EBOOT"
+
+          echo "=== EBOOT.PBP ==="
+          ls -lh "$EBOOT"
+          file "$EBOOT"
+
+      - name: Pull PPSSPP image
+        run: docker pull linuxserver/ppsspp:latest
+
+      - name: Start EBOOT in PPSSPP Headless
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EBOOT="$GITHUB_WORKSPACE/dist/PSP/GAME/PSPExplorer/EBOOT.PBP"
+
+          echo "=== Creating PPSSPP container ==="
+
+          docker create \
+            --name ppsspp-smoketest \
+            --shm-size=8g \
+            --entrypoint /bin/bash \
+            linuxserver/ppsspp:latest \
+            -lc '
+              set -e
+
+              mkdir -p /game
+
+              echo "Container initialized."
+              echo "Waiting for EBOOT..."
+
+              while [ ! -f /game/EBOOT.PBP ]; do
+                sleep 1
+              done
+
+              echo "=== EBOOT ==="
+              ls -lh /game/EBOOT.PBP
+
+              echo "=== PPSSPP executable ==="
+              test -x /usr/bin/PPSSPPHeadless
+
+              echo "=== Launching PPSSPP ==="
+
+              exec /usr/bin/PPSSPPHeadless \
+                --headless \
+                /game/EBOOT.PBP
+            '
+
+          echo "=== Starting container ==="
+          docker start ppsspp-smoketest
+
+          echo "=== Waiting for /game ==="
+
+          for i in $(seq 1 30); do
+            if docker exec ppsspp-smoketest test -d /game; then
+              break
+            fi
+
+            sleep 1
+          done
+
+          docker exec ppsspp-smoketest test -d /game
+
+          echo "=== Copying EBOOT ==="
+          docker cp "$EBOOT" ppsspp-smoketest:/game/EBOOT.PBP
+
+          echo "=== Container EBOOT ==="
+          docker exec ppsspp-smoketest ls -lh /game/EBOOT.PBP
+
+          echo "=== Waiting for PPSSPP ==="
+
+          set +e
+
+          timeout 30s \
+            sh -c 'while docker inspect -f "{{.State.Running}}" ppsspp-smoketest 2>/dev/null | grep -q true; do sleep 1; done'
+
+          wait_status=$?
+
+          docker logs ppsspp-smoketest
+
+          container_status="$(
+            docker inspect \
+              -f '{{.State.ExitCode}}' \
+              ppsspp-smoketest
+          )"
+
+          set -e
+
+          echo "Wait status: $wait_status"
+          echo "PPSSPP container exit status: $container_status"
+
+          if [ "$wait_status" -eq 124 ]; then
+            echo "PPSSPP remained running."
+            echo "EBOOT successfully started."
+            exit 0
+          fi
+
+          if [ "$container_status" -eq 0 ]; then
+            echo "PPSSPP exited normally."
+            echo "EBOOT successfully started."
+            exit 0
+          fi
+
+          echo "PPSSPP failed with status $container_status"
+          exit "$container_status"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f ppsspp-smoketest >/dev/null 2>&1 || true
