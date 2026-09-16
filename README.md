@@ -11,7 +11,7 @@ File Explorer for PlayStation Portable, written in C
 
 ![Screenshot 1](./screenshots/scr_01.jpg)
 
-This project is not affiliated with or endorsed by Sony. [PSPDEV/PSPSDK](https://github.com/pspdev/pspsdk) is the open-source SDK/toolchain used to build the game.
+This project is not affiliated with or endorsed by Sony. [PSPDEV/PSPSDK](https://github.com/pspdev/pspsdk) is the open-source SDK/toolchain used to build this program.
 
 ## Features
 
