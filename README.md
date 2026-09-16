@@ -2,7 +2,7 @@
 
 File Explorer for PlayStation Portable, written in C
 
-[![PSP Build](https://github.com/violinmelody/PSPExplorer/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/violinmelody/PSPExplorer/actions/workflows/build.yml) [![Tests](https://github.com/violinmelody/2048PSP/actions/workflows/smoketest.yml/badge.svg?branch=main)](https://github.com/violinmelody/2048PSP/actions/workflows/smoketest.yml)
+[![PSP Build](https://github.com/violinmelody/PSPExplorer/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/violinmelody/PSPExplorer/actions/workflows/build.yml) [![Tests](https://github.com/violinmelody/PSPExplorer/actions/workflows/smoketest.yml/badge.svg?branch=main)](https://github.com/violinmelody/PSPExplorer/actions/workflows/smoketest.yml)
 
 
 **Version:** 1.0.0  
