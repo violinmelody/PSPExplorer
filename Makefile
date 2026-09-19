@@ -8,7 +8,8 @@ LIBS = -lpng -ljpeg -lz -lm -lpspgu -lpspdisplay -lpspctrl -lpspaudio -lpspmp3 -
 EXTRA_TARGETS = EBOOT.PBP
 PSP_EBOOT_TITLE = PSPExplorer
 PSP_EBOOT_ICON = assets/ICON0.PNG
+SFOFLAGS += -s APP_VER=01.00
 PSP_EBOOT_SFO = PARAM.SFO
-BUILD_PRX = 1
+BUILD_PRX = 0
 PSP_FW_VERSION = 660
 include $(PSPSDK)/lib/build.mak

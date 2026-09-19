@@ -150,10 +150,10 @@ static int wav_open(AudioPlayer*p){
 			g_wav.data_off=ftell(f);
 			g_wav.data_size=sz;
 			fseek(f,sz,SEEK_CUR);
+			}
+			else fseek(f,sz,SEEK_CUR);
+			if(sz&1) fseek(f,1,SEEK_CUR);
 		}
-		else fseek(f,sz,SEEK_CUR);
-		
-		if(sz&1) fseek(f,1,SEEK_CUR);
 		if(fmt!=1||g_wav.bits!=16||(p->channels!=1&&p->channels!=2)||!g_wav.data_size){
 			fclose(f);
 			return -1;
